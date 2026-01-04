@@ -200,5 +200,5 @@ test {
 cucumberReports {
     outputDir = file('build/reports/cucumber/html')
     buildId = '0'
-    reports = files('reports/example-report.json')/////hello
+    reports = files('reports/example-report.json')
 }
