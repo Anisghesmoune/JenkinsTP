@@ -5,7 +5,7 @@ pipeline {
         stage('Test') {
             steps {
                 // 1. Run unit tests
-                sh './gradlew test'
+                bat './gradlew test'
                 // 2. Archive unit test results
                 junit '**/build/test-results/test/*.xml'
                 // 3. Generate Cucumber reports (requires plugin setup)
@@ -50,12 +50,12 @@ pipeline {
     post {
         success {
             // Notification: Email and Slack on success
-            slackSend color: 'good', message: "Build Successful: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+//             slackSend color: 'good', message: "Build Successful: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
             mail to: 'team@example.com', subject: "Success: ${env.JOB_NAME}", body: "Build finished successfully."
         }
         failure {
             // Notification on failure
-            slackSend color: 'danger', message: "Build Failed: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+//             slackSend color: 'danger', message: "Build Failed: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
         }
     }
 }
