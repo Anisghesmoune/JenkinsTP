@@ -52,19 +52,20 @@ publishing {
     }
 
     repositories {
-        // Repository local (garde celui-ci)
+        // 1. Repository local pour tes tests sur PC
         maven {
             name = 'local'
             url = uri("${buildDir}/repo")
         }
 
-        // Repository mymavenrepo.com (ajoutez celui-ci)
+        // 2. Repository distant (MyMavenRepo) configuré via Jenkins
         maven {
             name = 'myMavenRepo'
-            url = uri("https://mymavenrepo.com/repo/YOUR_REPO_ID/")
+            // On récupère l'URL, le User et le Password depuis Jenkins
+            url = uri(System.getenv("MAVEN_REPO_URL") ?: "https://mymavenrepo.com/repo/ID_DE_SECOURS/")
             credentials {
-                username = System.getenv("MAVEN_USERNAME") ?: 'votre-username'
-                password = System.getenv("MAVEN_PASSWORD") ?: 'votre-password'
+                username = System.getenv("MAVEN_USER") ?: 'user-local'
+                password = System.getenv("MAVEN_PASSWORD") ?: 'pass-local'
             }
         }
     }
