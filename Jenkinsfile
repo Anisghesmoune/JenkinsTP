@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // Ici, on suppose que tu as défini %slack-token% dans Jenkins Global Env
-        SLACK_TOKEN = '%slack-token%'
+        // Récupère la variable globale Jenkins.
+        // Note : Si le nom contient un tiret, on utilise la syntaxe ['name']
+        SLACK_URL = "${env['slack-token']}"
     }
 
     stages {
-
         stage('Test') {
             steps {
                 echo 'Phase 2.1: Lancement des tests...'
@@ -48,43 +48,36 @@ pipeline {
                 echo 'Phase 2.5: Déploiement sur MyMavenRepo...'
                 bat 'gradlew.bat publish'
             }
-        }///////////////////////////////
-        stage('slack') {
-                    steps {
-          echo %slack_token%
- bat """
-                curl -X POST -H "Content-type: application/json" ^
-                --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
-                %slack-token%
-            """                    }
-                }//////
+        }
     }
 
-//     post {
-// //
-//         success {
-//             mail to: 'ma_ghesmoune@esi.dz',
-//                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-//                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
-//
-//             // Slack notification avec %slack-token%
-//             bat """
-//                 curl -X POST -H "Content-type: application/json" ^
-//                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
-//                 %slack-token%
-//             """
-//         }
-//
-//         failure {
-//             mail to: 'ma_ghesmoune@esi.dz',
-//                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-//                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
-//
-//             bat """
-//                 curl -X POST -H "Content-type: application/json" ^
-//                 --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs.\\\"}" ^
-//                 %slack-token%
-//             """
-//         }///
-// //     }
+    post {
+        success {
+            script {
+                // Envoi Email
+                mail to: 'ma_ghesmoune@esi.dz',
+                     subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+                     body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
+
+                // Envoi Slack via Curl (Syntaxe Windows bat avec échappement des guillemets JSON)
+                bat """
+                    curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ${SLACK_URL}
+                """
+            }
+        }
+
+        failure {
+            script {
+                // Envoi Email
+                mail to: 'ma_ghesmoune@esi.dz',
+                     subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+                     body: "Le build a échoué. Vérifiez les logs sur Jenkins : ${env.BUILD_URL}"
+
+                // Envoi Slack Failure
+                bat """
+                    curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs : ${env.BUILD_URL}\\\"}" ${SLACK_URL}
+                """
+            }
+        }
+    }
 }
