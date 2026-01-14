@@ -1,8 +1,6 @@
 pipeline {
     agent any
 
-    // On a supprimé le bloc environment vide qui causait l'erreur
-
     stages {
         stage('Test') {
             steps {
@@ -48,26 +46,41 @@ pipeline {
 
         stage('slack') {
             steps {
-                echo "Envoi de la notification Slack..."
-                // Utilisation de guillemets autour de %slack-token% pour éviter l'erreur d'URL malformée
-                // Tout sur une seule ligne pour éviter les espaces invisibles
-                bat """
-                curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: %JOB_NAME% #%BUILD_NUMBER% - Le JAR est déployé !\\\"}" "%slack-token%"
-                """
+                script {
+                    // On récupère l'URL et on retire les espaces invisibles avec .trim()
+                    // On utilise env.getProperty pour éviter les erreurs de sécurité Sandbox
+                    def slackUrl = env.getProperty('slack-token')?.trim()
+
+                    if (slackUrl) {
+                        echo "Envoi de la notification Slack..."
+                        // Note : On utilise ${slackUrl} sans guillemets autour car le trim() a tout nettoyé
+                        bat """
+                        curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: %JOB_NAME% #%BUILD_NUMBER% - Le JAR est déployé !\\\"}" ${slackUrl}
+                        """
+                    } else {
+                        echo "ERREUR : La variable slack-token n'est pas définie dans Jenkins."
+                    }
+                }
             }
         }
     }
 
     post {
         failure {
-            echo "Le pipeline a échoué. Envoi mail et Slack..."
-            mail to: 'ma_ghesmoune@esi.dz',
-                 subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le build a échoué. Vérifiez les logs sur Jenkins."
+            script {
+                // Envoi de l'email
+                mail to: 'ma_ghesmoune@esi.dz',
+                     subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+                     body: "Le build a échoué. Vérifiez les logs sur Jenkins : ${env.BUILD_URL}"
 
-            bat """
-            curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"❌ FAILED: %JOB_NAME% #%BUILD_NUMBER% - Vérifiez les logs.\\\"}" "%slack-token%"
-            """
+                // Envoi Slack en cas d'échec
+                def slackUrl = env.getProperty('slack-token')?.trim()
+                if (slackUrl) {
+                    bat """
+                    curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"❌ FAILED: %JOB_NAME% #%BUILD_NUMBER% - Vérifiez les logs.\\\"}" ${slackUrl}
+                    """
+                }
+            }
         }
     }
 }
