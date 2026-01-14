@@ -15,19 +15,13 @@ repositories {
 }
 
 dependencies {
+    // Cucumber et JUnit 4 (comme spécifié dans ton projet)
     testImplementation 'io.cucumber:cucumber-java:6.0.0'
     testImplementation 'io.cucumber:cucumber-junit:6.0.0'
     testImplementation 'junit:junit:4.13.1'
 }
 
-configurations {
-    mailRuntime
-}
-
-dependencies {
-    mailRuntime 'com.sun.mail:jakarta.mail:2.0.1'
-}
-
+// Configuration Jacoco pour les rapports de couverture (Section 2.1 du PDF)
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -36,11 +30,11 @@ jacocoTestReport {
     dependsOn test
     reports {
         xml.required.set(true)
-        csv.required.set(false)
         html.outputLocation.set(layout.buildDirectory.dir('reports/jacoco'))
     }
 }
 
+// Configuration de la publication (Section 2.5 et Section 6 du PDF)
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -52,25 +46,19 @@ publishing {
     }
 
     repositories {
-        // 1. Repository local pour tes tests sur PC
-        maven {
-            name = 'local'
-            url = uri("${buildDir}/repo")
-        }
-
-        // 2. Repository distant (MyMavenRepo) configuré via Jenkins
         maven {
             name = 'myMavenRepo'
-            // On récupère l'URL, le User et le Password depuis Jenkins
-            url = uri(System.getenv("MAVEN_REPO_URL") ?: "https://mymavenrepo.com/repo/ID_DE_SECOURS/")
+            // Utilise les variables configurées dans Administrer Jenkins -> System
+            url = uri(System.getenv("MAVEN_REPO_URL") ?: "https://mymavenrepo.com/repo/mQ03pekN5c33N3kUSQHA/")
             credentials {
-                username = System.getenv("MAVEN_USER") ?: 'user-local'
-                password = System.getenv("MAVEN_PASSWORD") ?: 'pass-local'
+                username = System.getenv("MAVEN_USER") ?: 'admin'
+                password = System.getenv("MAVEN_PASSWORD") ?: 'admin'
             }
         }
     }
 }
 
+// Configuration SonarQube (Section 5 du PDF)
 sonarqube {
     properties {
         property "sonar.projectKey", "matrix-api"
@@ -81,119 +69,10 @@ sonarqube {
     }
 }
 
-//import groovy.json.JsonOutput
-//import java.net.HttpURLConnection
-//import java.net.SocketTimeoutException
-
-//tasks.register('slackNotify') {
-//    doLast {
-//        def webhookUrl = "https://hooks.slack.com/services/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"
-//        def message = "✅ Déploiement réussi du projet TP05 version 1.0 !"
-//
-//        println "📤 Envoi de la notification Slack..."
-//
-//        try {
-//            def url = new URL(webhookUrl)
-//            def connection = (HttpURLConnection) url.openConnection()
-//            connection.setRequestMethod("POST")
-//            connection.setDoOutput(true)
-//            connection.setRequestProperty("Content-Type", "application/json")
-//            connection.setConnectTimeout(5000)
-//            connection.setReadTimeout(5000)
-//
-//            def payload = JsonOutput.toJson([text: message])
-//
-//            connection.outputStream.withWriter("UTF-8") { writer ->
-//                writer.write(payload)
-//            }
-//
-//            def responseCode = connection.responseCode
-//
-//            if (responseCode == 200) {
-//                println "✅ Notification Slack envoyée avec succès !"
-//            } else {
-//                println "⚠️ Code de réponse inhabituel: ${responseCode}"
-//            }
-//
-//            connection.disconnect()
-//
-//        } catch (SocketTimeoutException e) {
-//            println "⚠️ Timeout lors de l'envoi de la notification Slack (connexion lente)"
-//        } catch (Exception e) {
-//            println "⚠️ Impossible d'envoyer la notification Slack: ${e.message}"
-//        }
-//    }
-//}
-//
-//tasks.register('mailNotify') {
-//    doLast {
-//        println "📧 Envoi de la notification par email..."
-//
-//        try {
-//            // Configuration
-//            String host = "smtp.gmail.com"
-//            String from = "lo_benhebbadj@esi.dz"
-//            String to = "h_mokeddem@esi.dz"
-//            String password = "edjq ewnp lbzw sroz"
-//
-//            // Création du classloader avec les dépendances mail
-//            def mailClasspath = configurations.mailRuntime.files
-//            def urls = mailClasspath.collect { it.toURI().toURL() } as URL[]
-//            def loader = new URLClassLoader(urls, this.class.classLoader)
-//
-//            // Chargement des classes
-//            def Session = loader.loadClass('jakarta.mail.Session')
-//            def Authenticator = loader.loadClass('jakarta.mail.Authenticator')
-//            def PasswordAuthentication = loader.loadClass('jakarta.mail.PasswordAuthentication')
-//            def MimeMessage = loader.loadClass('jakarta.mail.internet.MimeMessage')
-//            def InternetAddress = loader.loadClass('jakarta.mail.internet.InternetAddress')
-//            def Transport = loader.loadClass('jakarta.mail.Transport')
-//            def MessageRecipientType = loader.loadClass('jakarta.mail.Message$RecipientType')
-//
-//            // Configuration des propriétés SMTP
-//            Properties props = new Properties()
-//            props.put("mail.smtp.auth", "true")
-//            props.put("mail.smtp.starttls.enable", "true")
-//            props.put("mail.smtp.host", host)
-//            props.put("mail.smtp.port", "587")
-//
-//            // Création de l'authenticator avec une classe anonyme
-//            def passwordAuth = PasswordAuthentication.getConstructor(String, String).newInstance(from, password)
-//            def auth = [
-//                    getPasswordAuthentication: { -> passwordAuth }
-//            ].asType(Authenticator)
-//
-//            // Création de la session
-//            def session = Session.getInstance(props, auth)
-//
-//            // Création du message
-//            def message = MimeMessage.getConstructor(Session).newInstance(session)
-//            message.setFrom(InternetAddress.getConstructor(String).newInstance(from))
-//            message.setRecipients(MessageRecipientType.TO, InternetAddress.parse(to))
-//            message.setSubject("Déploiement réussi du projet TP05")
-//            message.setText("La librairie TP05 version 1.0 a été déployée avec succès sur le repository Maven local.")
-//
-//            // Envoi
-//            Transport.send(message)
-//
-//            println "✅ Email envoyé avec succès !"
-//
-//        } catch (Exception e) {
-//            println "⚠️ Impossible d'envoyer l'email: ${e.message}"
-//            e.printStackTrace()
-//            println "\n📝 Pour configurer Gmail :"
-//            println "   1. Activer l'authentification à 2 facteurs"
-//            println "   2. Générer un mot de passe d'application sur https://myaccount.google.com/apppasswords"
-//            println "   3. Remplacer 'votreEmail@gmail.com' et 'MOT_DE_PASSE_APPLICATION' dans build.gradle"
-//        }
-//    }
-//}
-//
-//publish.finalizedBy(slackNotify)
-//publish.finalizedBy(mailNotify)
-
+// Configuration des tests et rapports Cucumber
 test {
     useJUnit()
+    finalizedBy jacocoTestReport
     systemProperty "cucumber.publish.enabled", "false"
     systemProperty "cucumber.plugin", "html:build/reports/cucumber/index.html"
 }
