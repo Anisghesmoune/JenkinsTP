@@ -1,8 +1,10 @@
 pipeline {
     agent any
 
-    // On ne définit pas SLACK_TOKEN ici si c'est déjà une variable globale de Jenkins
-    // Cela évite les conflits de syntaxe Groovy.
+    environment {
+        // On s'assure que la variable est disponible pour tout le pipeline
+        // Note: Jenkins injecte automatiquement les variables globales
+    }
 
     stages {
         stage('Test') {
@@ -47,15 +49,13 @@ pipeline {
             }
         }
 
-        stage('Slack Notification') {
+        stage('slack') {
             steps {
-                echo "Envoi de la notification vers Slack..."
-                // Utilisation des variables d'environnement Jenkins directes (%VAR%)
-                // pour éviter les erreurs de Sandbox Groovy
+                echo 'Envoi de la notification Slack...'
+                // On utilise les guillemets autour de %slack-token% pour protéger l'URL
+                // On met tout sur une seule ligne pour éviter les caractères de retour à la ligne invisibles
                 bat """
-                    curl -X POST -H "Content-type: application/json" ^
-                    --data "{\\\"text\\\": \\\"✅ SUCCESS: %JOB_NAME% #%BUILD_NUMBER% - Le JAR est déployé !\\\"}" ^
-                    "%slack-token%"
+                curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: %JOB_NAME% #%BUILD_NUMBER% - Le JAR est déployé !\\\"}" "%slack-token%"
                 """
             }
         }
@@ -63,16 +63,13 @@ pipeline {
 
     post {
         failure {
-            echo "Le pipeline a échoué."
+            echo 'Le pipeline a échoué.'
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le build a échoué. Vérifiez les logs sur Jenkins : ${env.BUILD_URL}"
+                 body: "Le build a échoué. Vérifiez les logs sur Jenkins."
 
-            // Notification Slack en cas d'échec (optionnel, mais recommandé)
             bat """
-                curl -X POST -H "Content-type: application/json" ^
-                --data "{\\\"text\\\": \\\"❌ FAILED: %JOB_NAME% #%BUILD_NUMBER% - Vérifiez les logs.\\\"}" ^
-                "%slack-token%"
+            curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"❌ FAILED: %JOB_NAME% #%BUILD_NUMBER% - Vérifiez les logs.\\\"}" "%slack-token%"
             """
         }
     }
