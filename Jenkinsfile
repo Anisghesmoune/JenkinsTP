@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+
         stage('Test') {
             steps {
                 echo 'Phase 2.1: Lancement des tests...'
@@ -46,27 +47,29 @@ pipeline {
     }
 
     post {
+
         success {
-            echo 'Phase 2.6: Notifications de succès...'
-            // Notification Email
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le pipeline s'est terminé avec succès. Le JAR est déployé : ${env.BUILD_URL}"
+                 body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
 
-            // Notification Slack (Couleur Verte)
-            slackSend color: 'good',
-                      message: "✅ SUCCESS: Job '${env.JOB_NAME}' [#${env.BUILD_NUMBER}] (${env.BUILD_URL})"
+            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_WEBHOOK')]) {
+                script {
+                    def status = currentBuild.result ?: 'SUCCESS'
+                    def message = "Build ${status} - ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+
+                    bat """
+                    curl -X POST -H "Content-type: application/json" ^
+                    --data "{\\"text\\": \\"${message}\\"}" %SLACK_WEBHOOK%
+                    """
+                }
+            }
         }
+
         failure {
-            echo 'Phase 2.6: Notifications d\'échec...'
-            // Notification Email
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le build a échoué. Vérifiez les logs : ${env.BUILD_URL}"
-
-            // Notification Slack (Couleur Rouge)
-            slackSend color: 'danger',
-                      message: "❌ FAILED: Job '${env.JOB_NAME}' [#${env.BUILD_NUMBER}] (${env.BUILD_URL})"
+                 body: "Le build a échoué. Vérifiez les logs sur Jenkins."
         }
     }
 }
