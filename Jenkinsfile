@@ -1,10 +1,7 @@
 pipeline {
     agent any
 
-    environment {
-        // On s'assure que la variable est disponible pour tout le pipeline
-        // Note: Jenkins injecte automatiquement les variables globales
-    }
+    // On a supprimé le bloc environment vide qui causait l'erreur
 
     stages {
         stage('Test') {
@@ -51,9 +48,9 @@ pipeline {
 
         stage('slack') {
             steps {
-                echo 'Envoi de la notification Slack...'
-                // On utilise les guillemets autour de %slack-token% pour protéger l'URL
-                // On met tout sur une seule ligne pour éviter les caractères de retour à la ligne invisibles
+                echo "Envoi de la notification Slack..."
+                // Utilisation de guillemets autour de %slack-token% pour éviter l'erreur d'URL malformée
+                // Tout sur une seule ligne pour éviter les espaces invisibles
                 bat """
                 curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: %JOB_NAME% #%BUILD_NUMBER% - Le JAR est déployé !\\\"}" "%slack-token%"
                 """
@@ -63,7 +60,7 @@ pipeline {
 
     post {
         failure {
-            echo 'Le pipeline a échoué.'
+            echo "Le pipeline a échoué. Envoi mail et Slack..."
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
