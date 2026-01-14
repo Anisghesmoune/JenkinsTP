@@ -60,7 +60,7 @@ pipeline {
                                   message: "✅ Build SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
                     }
 
-
+/////
         failure {
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
