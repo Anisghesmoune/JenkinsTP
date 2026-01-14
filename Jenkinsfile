@@ -53,11 +53,9 @@ pipeline {
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
 
-             slackSend channel: '#test-canal',
-                                  color: 'good',
-                                  tokenCredentialId: 'slack-webhook', // L'ID que tu as créé à l'étape 2
-                                  failOnError: false,
-                                  message: "✅ Build SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+             bat """
+                            curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" %slack-token%
+                        """
                     }
 
 /////
@@ -66,11 +64,9 @@ pipeline {
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
 
-            slackSend channel: '#test-canal',
-                                 color: 'danger',
-                                 tokenCredentialId: 'slack-webhook',
-                                 failOnError: false,
-                                 message: "❌ Build FAILED - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+               bat """
+                           curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs.\\\"}" %slack-token%
+                       """
                    }
     }//
 }
