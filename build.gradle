@@ -44,8 +44,12 @@ publishing {
     repositories {
         maven {
             name = 'myMavenRepo'
-            // On utilise directement l'URL publique puisque l'Auth est désactivée
-            url = uri(System.getenv("MAVEN_REPO_URL") ?: "https://mymavenrepo.com/repo/cEmjfkxugPlzLxXg1A2B/")
+            // URL et identifiants fournis pour ton dépôt
+            url = uri("https://mymavenrepo.com/repo/cEmjfkxugPlzLxXg1A2B/")
+            credentials {
+                username = "h_mokeddem@esi.dz"
+                password = "test0005"
+            }
         }
     }
 }
