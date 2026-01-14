@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     stages {
         stage('Test') {
             steps {
@@ -10,7 +9,6 @@ pipeline {
                 junit '**/build/test-results/test/*.xml'
             }
         }
-
         stage('Code Analysis') {
             steps {
                 echo 'Phase 2.2: Analyse SonarQube...'
@@ -19,7 +17,6 @@ pipeline {
                 }
             }
         }
-
         stage('Code Quality') {
             steps {
                 echo 'Phase 2.3: Vérification Quality Gate...'
@@ -28,7 +25,6 @@ pipeline {
                 }
             }
         }
-
         stage('Build') {
             steps {
                 echo 'Phase 2.4: Génération du JAR et Javadoc...'
@@ -36,46 +32,87 @@ pipeline {
                 archiveArtifacts artifacts: 'build/libs/*.jar, build/docs/javadoc/**', allowEmptyArchive: false
             }
         }
-
         stage('Deploy') {
             steps {
                 echo 'Phase 2.5: Déploiement sur MyMavenRepo...'
                 bat 'gradlew.bat publish'
             }
         }
-
-        stage('slack') {
+        stage('Slack Notification') {
             steps {
                 script {
-                    // Nettoyage de l'URL pour enlever l'espace invisible à la fin
-                    def slackUrl = env.getProperty('slack-token')?.trim()
+                    echo "Envoi de la notification Slack..."
+
+                    // Méthode 1 : Utilisation correcte de l'environnement variable
+                    def slackUrl = env.'slack-token'
 
                     if (slackUrl) {
-                        echo "Envoi de la notification Slack..."
-                        // Note : Suppression des émojis pour éviter l'erreur d'encodage (ßÉº)
-                        bat "curl -X POST -H \"Content-type: application/json\" --data \"{\\\"text\\\": \\\"SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est deploye !\\\"}\" ${slackUrl}"
+                        // Nettoyage de l'URL
+                        slackUrl = slackUrl.trim()
+
+                        // Création du message
+                        def message = "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est deploye !"
+
+                        // Création d'un fichier JSON temporaire pour éviter les problèmes d'échappement
+                        def jsonPayload = """{"text": "${message}"}"""
+                        writeFile file: 'slack-payload.json', text: jsonPayload
+
+                        // Envoi via curl avec le fichier
+                        bat "curl -X POST -H \"Content-type: application/json\" --data @slack-payload.json \"${slackUrl}\""
+
+                        // Nettoyage
+                        bat 'del slack-payload.json'
                     } else {
-                        echo "ERREUR : La variable slack-token est vide."
+                        echo "ATTENTION : La variable d'environnement 'slack-token' n'est pas définie."
+                        echo "Veuillez configurer cette variable dans Jenkins (Manage Jenkins > Configure System > Global properties)"
                     }
                 }
             }
         }
     }
-
     post {
         failure {
             script {
-                // Email
-                mail to: 'ma_ghesmoune@esi.dz',
-                     subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                     body: "Le build a échoué. Vérifiez les logs sur Jenkins."
+                echo "Le build a échoué. Envoi des notifications..."
 
-                // Slack (Nettoyé et sans émojis)
-                def slackUrl = env.getProperty('slack-token')?.trim()
+                // Notification Email
+                try {
+                    mail to: 'ma_ghesmoune@esi.dz',
+                         subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+                         body: """Le build a échoué.
+
+Job: ${env.JOB_NAME}
+Build Number: ${env.BUILD_NUMBER}
+Build URL: ${env.BUILD_URL}
+
+Vérifiez les logs sur Jenkins pour plus de détails."""
+                } catch (Exception e) {
+                    echo "Erreur lors de l'envoi de l'email : ${e.message}"
+                }
+
+                // Notification Slack
+                def slackUrl = env.'slack-token'
                 if (slackUrl) {
-                    bat "curl -X POST -H \"Content-type: application/json\" --data \"{\\\"text\\\": \\\"FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Verifiez les logs.\\\"}\" ${slackUrl}"
+                    slackUrl = slackUrl.trim()
+                    def message = "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Verifiez les logs."
+                    def jsonPayload = """{"text": "${message}"}"""
+                    writeFile file: 'slack-payload-failure.json', text: jsonPayload
+
+                    try {
+                        bat "curl -X POST -H \"Content-type: application/json\" --data @slack-payload-failure.json \"${slackUrl}\""
+                        bat 'del slack-payload-failure.json'
+                    } catch (Exception e) {
+                        echo "Erreur lors de l'envoi de la notification Slack : ${e.message}"
+                    }
                 }
             }
+        }
+        success {
+            echo "Build réussi avec succès !"
+        }
+        always {
+            echo "Nettoyage post-build..."
+            // Ajoutez ici des tâches de nettoyage si nécessaire
         }
     }
 }
