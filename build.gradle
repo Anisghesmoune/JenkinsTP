@@ -50,7 +50,7 @@ publishing {
                 username = "h_mokeddem@esi.dz"
                 password = "test0005"
             }
-        }
+        }//
     }
 }
 
