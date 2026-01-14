@@ -47,7 +47,7 @@ pipeline {
 
     post {
         success {
-            mail to: 'h_mokeddem@esi.dz',
+            mail to: 'ma_ghesmoune@esi.dz',
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
         }
@@ -56,5 +56,5 @@ pipeline {
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
         }
-    }
+    }///
 }
