@@ -15,11 +15,13 @@ repositories {
 }
 
 dependencies {
+    // Dépendances nécessaires pour Cucumber et JUnit 4
     testImplementation 'io.cucumber:cucumber-java:6.0.0'
     testImplementation 'io.cucumber:cucumber-junit:6.0.0'
     testImplementation 'junit:junit:4.13.1'
 }
 
+// Phase 2.1: Configuration de Jacoco pour les rapports de couverture
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -32,6 +34,7 @@ jacocoTestReport {
     }
 }
 
+// Phase 2.5: Configuration de la publication sur MyMavenRepo
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -44,16 +47,17 @@ publishing {
     repositories {
         maven {
             name = 'myMavenRepo'
-            // URL et identifiants fournis pour ton dépôt
-            url = uri("https://mymavenrepo.com/repo/QS0zrMavTCfpkFXvQKvK/")
+            // Lit les variables de Jenkins, sinon utilise les valeurs par défaut qui marchent
+            url = uri(System.getenv("MAVEN_REPO_URL") ?: "https://mymavenrepo.com/repo/QS0zrMavTCfpkFXvQKvK/")
             credentials {
-                username = "myMavenRepo"
-                password = "admin"
+                username = System.getenv("MAVEN_USER") ?: "myMavenRepo"
+                password = System.getenv("MAVEN_PASSWORD") ?: "admin"
             }
-        }//
+        }
     }
 }
 
+// Phase 2.2: Configuration SonarQube
 sonarqube {
     properties {
         property "sonar.projectKey", "matrix-api"
@@ -64,6 +68,7 @@ sonarqube {
     }
 }
 
+// Configuration de l'exécution des tests
 test {
     useJUnit()
     finalizedBy jacocoTestReport
