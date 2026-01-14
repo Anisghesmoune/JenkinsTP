@@ -43,28 +43,28 @@ pipeline {
                 script {
                     echo "Envoi de la notification Slack..."
 
-                    // Méthode 1 : Utilisation correcte de l'environnement variable
                     def slackUrl = env.'slack-token'
 
                     if (slackUrl) {
-                        // Nettoyage de l'URL
                         slackUrl = slackUrl.trim()
 
-                        // Création du message
                         def message = "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est deploye !"
 
-                        // Création d'un fichier JSON temporaire pour éviter les problèmes d'échappement
-                        def jsonPayload = """{"text": "${message}"}"""
-                        writeFile file: 'slack-payload.json', text: jsonPayload
+                        // Création du fichier JSON
+                        def jsonContent = """{"text": "${message}"}"""
+                        writeFile file: 'slack-payload.json', text: jsonContent, encoding: 'UTF-8'
 
-                        // Envoi via curl avec le fichier
-                        bat "curl -X POST -H \"Content-type: application/json\" --data @slack-payload.json \"${slackUrl}\""
+                        // Utilisation de PowerShell pour l'envoi (plus fiable que cmd)
+                        powershell """
+                            \$webhook = '${slackUrl}'
+                            \$json = Get-Content -Path 'slack-payload.json' -Raw
+                            Invoke-RestMethod -Uri \$webhook -Method Post -Body \$json -ContentType 'application/json; charset=utf-8'
+                        """
 
                         // Nettoyage
-                        bat 'del slack-payload.json'
+                        bat 'if exist slack-payload.json del slack-payload.json'
                     } else {
-                        echo "ATTENTION : La variable d'environnement 'slack-token' n'est pas définie."
-                        echo "Veuillez configurer cette variable dans Jenkins (Manage Jenkins > Configure System > Global properties)"
+                        echo "ATTENTION : La variable 'slack-token' n'est pas definie."
                     }
                 }
             }
@@ -73,19 +73,19 @@ pipeline {
     post {
         failure {
             script {
-                echo "Le build a échoué. Envoi des notifications..."
+                echo "Le build a echoue. Envoi des notifications..."
 
                 // Notification Email
                 try {
                     mail to: 'ma_ghesmoune@esi.dz',
                          subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                         body: """Le build a échoué.
+                         body: """Le build a echoue.
 
 Job: ${env.JOB_NAME}
 Build Number: ${env.BUILD_NUMBER}
 Build URL: ${env.BUILD_URL}
 
-Vérifiez les logs sur Jenkins pour plus de détails."""
+Verifiez les logs sur Jenkins pour plus de details."""
                 } catch (Exception e) {
                     echo "Erreur lors de l'envoi de l'email : ${e.message}"
                 }
@@ -95,12 +95,16 @@ Vérifiez les logs sur Jenkins pour plus de détails."""
                 if (slackUrl) {
                     slackUrl = slackUrl.trim()
                     def message = "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Verifiez les logs."
-                    def jsonPayload = """{"text": "${message}"}"""
-                    writeFile file: 'slack-payload-failure.json', text: jsonPayload
+                    def jsonContent = """{"text": "${message}"}"""
+                    writeFile file: 'slack-payload-failure.json', text: jsonContent, encoding: 'UTF-8'
 
                     try {
-                        bat "curl -X POST -H \"Content-type: application/json\" --data @slack-payload-failure.json \"${slackUrl}\""
-                        bat 'del slack-payload-failure.json'
+                        powershell """
+                            \$webhook = '${slackUrl}'
+                            \$json = Get-Content -Path 'slack-payload-failure.json' -Raw
+                            Invoke-RestMethod -Uri \$webhook -Method Post -Body \$json -ContentType 'application/json; charset=utf-8'
+                        """
+                        bat 'if exist slack-payload-failure.json del slack-payload-failure.json'
                     } catch (Exception e) {
                         echo "Erreur lors de l'envoi de la notification Slack : ${e.message}"
                     }
@@ -108,11 +112,15 @@ Vérifiez les logs sur Jenkins pour plus de détails."""
             }
         }
         success {
-            echo "Build réussi avec succès !"
+            echo "Build reussi avec succes !"
         }
         always {
             echo "Nettoyage post-build..."
-            // Ajoutez ici des tâches de nettoyage si nécessaire
+            // Nettoyage des fichiers temporaires
+            bat '''
+                if exist slack-payload.json del slack-payload.json
+                if exist slack-payload-failure.json del slack-payload-failure.json
+            '''
         }
     }
 }
