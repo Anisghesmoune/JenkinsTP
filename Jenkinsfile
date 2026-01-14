@@ -62,7 +62,7 @@ pipeline {
             bat """
                 curl -X POST -H "Content-type: application/json" ^
                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
-                %SLACK_TOKEN%
+                %slack-token%
             """
         }
 
@@ -74,8 +74,8 @@ pipeline {
             bat """
                 curl -X POST -H "Content-type: application/json" ^
                 --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs.\\\"}" ^
-                %SLACK_TOKEN%
+                %slack-token%
             """
-        }
+        }///
     }
 }
