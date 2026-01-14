@@ -47,14 +47,26 @@ pipeline {
 
     post {
         success {
+            echo 'Phase 2.6: Notifications de succès...'
+            // Notification Email
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
+                 body: "Le pipeline s'est terminé avec succès. Le JAR est déployé : ${env.BUILD_URL}"
+
+            // Notification Slack (Couleur Verte)
+            slackSend color: 'good',
+                      message: "✅ SUCCESS: Job '${env.JOB_NAME}' [#${env.BUILD_NUMBER}] (${env.BUILD_URL})"
         }
         failure {
-            mail to: 'h_mokeddem@esi.dz',
+            echo 'Phase 2.6: Notifications d\'échec...'
+            // Notification Email
+            mail to: 'ma_ghesmoune@esi.dz',
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le build a échoué. Vérifiez les logs sur Jenkins."
+                 body: "Le build a échoué. Vérifiez les logs : ${env.BUILD_URL}"
+
+            // Notification Slack (Couleur Rouge)
+            slackSend color: 'danger',
+                      message: "❌ FAILED: Job '${env.JOB_NAME}' [#${env.BUILD_NUMBER}] (${env.BUILD_URL})"
         }
-    }///
+    }
 }
