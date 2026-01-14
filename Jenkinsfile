@@ -7,6 +7,10 @@ pipeline {
                 bat 'gradlew.bat test'
                 echo 'Archivage des résultats de tests...'
                 junit '**/build/test-results/test/*.xml'
+                  cucumber buildStatus: 'UNSTABLE',
+                                reportTitle: 'My report',
+                                fileIncludePattern: 'reports/example-report.json',
+                                trendsLimit: 10
             }
         }
         stage('Code Analysis') {
