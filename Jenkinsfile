@@ -53,10 +53,13 @@ pipeline {
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
 
-            slackSend channel: '#general',
-                      color: 'good',
-                      message: "Build SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-        }
+             slackSend channel: '#general',
+                                  color: 'good',
+                                  tokenCredentialId: 'slack-webhook', // L'ID que tu as créé à l'étape 2
+                                  failOnError: false,
+                                  message: "✅ Build SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+                    }
+
 
         failure {
             mail to: 'ma_ghesmoune@esi.dz',
@@ -64,8 +67,10 @@ pipeline {
                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
 
             slackSend channel: '#general',
-                      color: 'danger',
-                      message: "Build FAILED - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-        }
+                                 color: 'danger',
+                                 tokenCredentialId: 'slack-webhook',
+                                 failOnError: false,
+                                 message: "❌ Build FAILED - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+                   }
     }
 }
