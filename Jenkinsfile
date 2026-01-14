@@ -49,33 +49,42 @@ pipeline {
                 bat 'gradlew.bat publish'
             }
         }
-    }
-
-    post {
-
-        success {
-            mail to: 'ma_ghesmoune@esi.dz',
-                 subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
-
-            // Slack notification avec %slack-token%
-            bat """
+        stage('slack') {
+                    steps {
+                        echo ('%slack_token%')
+ bat """
                 curl -X POST -H "Content-type: application/json" ^
                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
                 %slack-token%
-            """
-        }
-
-        failure {
-            mail to: 'ma_ghesmoune@esi.dz',
-                 subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                 body: "Le build a échoué. Vérifiez les logs sur Jenkins."
-
-            bat """
-                curl -X POST -H "Content-type: application/json" ^
-                --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs.\\\"}" ^
-                %slack-token%
-            """
-        }///
+            """                    }
+                }
     }
+
+//     post {
+// //
+//         success {
+//             mail to: 'ma_ghesmoune@esi.dz',
+//                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+//                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
+//
+//             // Slack notification avec %slack-token%
+//             bat """
+//                 curl -X POST -H "Content-type: application/json" ^
+//                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
+//                 %slack-token%
+//             """
+//         }
+//
+//         failure {
+//             mail to: 'ma_ghesmoune@esi.dz',
+//                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+//                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
+//
+//             bat """
+//                 curl -X POST -H "Content-type: application/json" ^
+//                 --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs.\\\"}" ^
+//                 %slack-token%
+//             """
+//         }///
+// //     }
 }
