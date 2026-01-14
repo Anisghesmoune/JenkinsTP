@@ -47,18 +47,15 @@ pipeline {
         stage('slack') {
             steps {
                 script {
-                    // On récupère l'URL et on retire les espaces invisibles avec .trim()
-                    // On utilise env.getProperty pour éviter les erreurs de sécurité Sandbox
+                    // Nettoyage de l'URL pour enlever l'espace invisible à la fin
                     def slackUrl = env.getProperty('slack-token')?.trim()
 
                     if (slackUrl) {
                         echo "Envoi de la notification Slack..."
-                        // Note : On utilise ${slackUrl} sans guillemets autour car le trim() a tout nettoyé
-                        bat """
-                        curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"✅ SUCCESS: %JOB_NAME% #%BUILD_NUMBER% - Le JAR est déployé !\\\"}" ${slackUrl}
-                        """
+                        // Note : Suppression des émojis pour éviter l'erreur d'encodage (ßÉº)
+                        bat "curl -X POST -H \"Content-type: application/json\" --data \"{\\\"text\\\": \\\"SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est deploye !\\\"}\" ${slackUrl}"
                     } else {
-                        echo "ERREUR : La variable slack-token n'est pas définie dans Jenkins."
+                        echo "ERREUR : La variable slack-token est vide."
                     }
                 }
             }
@@ -68,17 +65,15 @@ pipeline {
     post {
         failure {
             script {
-                // Envoi de l'email
+                // Email
                 mail to: 'ma_ghesmoune@esi.dz',
                      subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
-                     body: "Le build a échoué. Vérifiez les logs sur Jenkins : ${env.BUILD_URL}"
+                     body: "Le build a échoué. Vérifiez les logs sur Jenkins."
 
-                // Envoi Slack en cas d'échec
+                // Slack (Nettoyé et sans émojis)
                 def slackUrl = env.getProperty('slack-token')?.trim()
                 if (slackUrl) {
-                    bat """
-                    curl -X POST -H "Content-type: application/json" --data "{\\\"text\\\": \\\"❌ FAILED: %JOB_NAME% #%BUILD_NUMBER% - Vérifiez les logs.\\\"}" ${slackUrl}
-                    """
+                    bat "curl -X POST -H \"Content-type: application/json\" --data \"{\\\"text\\\": \\\"FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Verifiez les logs.\\\"}\" ${slackUrl}"
                 }
             }
         }
