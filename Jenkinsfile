@@ -57,7 +57,7 @@ echo %slack_token%
                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
                 %slack-token%
             """                    }
-                }
+                }//////
     }
 
 //     post {
