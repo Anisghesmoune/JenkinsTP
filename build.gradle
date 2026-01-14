@@ -45,10 +45,10 @@ publishing {
         maven {
             name = 'myMavenRepo'
             // URL et identifiants fournis pour ton dépôt
-            url = uri("https://mymavenrepo.com/repo/cEmjfkxugPlzLxXg1A2B/")
+            url = uri("https://mymavenrepo.com/repo/QS0zrMavTCfpkFXvQKvK/")
             credentials {
-                username = "h_mokeddem@esi.dz"
-                password = "test0005"
+                username = "myMavenRepo"
+                password = "admin"
             }
         }//
     }
