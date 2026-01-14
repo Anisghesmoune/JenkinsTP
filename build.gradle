@@ -53,7 +53,7 @@ publishing {
                 username ="myMavenRepo"
                 password = "admin"
             }
-        }
+        }//zxkd
     }
 }
 
