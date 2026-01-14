@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        // Ici, on suppose que tu as défini %slack-token% dans Jenkins Global Env
+        SLACK_TOKEN = '%slack-token%'
+    }
+
     stages {
 
         stage('Test') {
@@ -53,10 +58,11 @@ pipeline {
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
 
+            // Slack notification avec %slack-token%
             bat """
                 curl -X POST -H "Content-type: application/json" ^
                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
-                %slack-token%
+                %SLACK_TOKEN%
             """
         }
 
@@ -68,7 +74,7 @@ pipeline {
             bat """
                 curl -X POST -H "Content-type: application/json" ^
                 --data "{\\\"text\\\": \\\"❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Vérifiez les logs.\\\"}" ^
-                %slack-token%
+                %SLACK_TOKEN%
             """
         }
     }
