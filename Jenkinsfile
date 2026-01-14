@@ -48,10 +48,10 @@ pipeline {
                 echo 'Phase 2.5: Déploiement sur MyMavenRepo...'
                 bat 'gradlew.bat publish'
             }
-        }
+        }///////////////////////////////
         stage('slack') {
                     steps {
-echo %slack_token%
+          echo %slack_token%
  bat """
                 curl -X POST -H "Content-type: application/json" ^
                 --data "{\\\"text\\\": \\\"✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} - Le JAR est déployé !\\\"}" ^
