@@ -53,23 +53,19 @@ pipeline {
                  subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
 
-            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_WEBHOOK')]) {
-                script {
-                    def status = currentBuild.result ?: 'SUCCESS'
-                    def message = "Build ${status} - ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-
-                    bat """
-                    curl -X POST -H "Content-type: application/json" ^
-                    --data "{\\"text\\": \\"${message}\\"}" %SLACK_WEBHOOK%
-                    """
-                }
-            }
+            slackSend channel: '#general',
+                      color: 'good',
+                      message: "Build SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
         }
 
         failure {
             mail to: 'ma_ghesmoune@esi.dz',
                  subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
                  body: "Le build a échoué. Vérifiez les logs sur Jenkins."
+
+            slackSend channel: '#general',
+                      color: 'danger',
+                      message: "Build FAILED - ${env.JOB_NAME} #${env.BUILD_NUMBER}"
         }
     }
 }
