@@ -1,74 +1,60 @@
-plugins {
-    id 'java'
-    id "com.github.spacialcircumstances.gradle-cucumber-reporting" version "0.1.25"
-    id "org.sonarqube" version "5.0.0.4638"
-    id 'maven-publish'
-}
+pipeline {
+    agent any
 
-apply plugin: 'jacoco'
+    stages {
+        stage('Test') {
+            steps {
+                echo 'Phase 2.1: Lancement des tests...'
+                bat 'gradlew.bat test'
+                echo 'Archivage des résultats de tests...'
+                junit '**/build/test-results/test/*.xml'
+            }
+        }
 
-group = 'com.example'
-version = '1.0'
+        stage('Code Analysis') {
+            steps {
+                echo 'Phase 2.2: Analyse SonarQube...'
+                withSonarQubeEnv('sonar') {
+                    bat 'gradlew.bat sonar'
+                }
+            }
+        }
 
-repositories {
-    mavenCentral()
-}
+        stage('Code Quality') {
+            steps {
+                echo 'Phase 2.3: Vérification Quality Gate...'
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
-dependencies {
-    testImplementation 'io.cucumber:cucumber-java:6.0.0'
-    testImplementation 'io.cucumber:cucumber-junit:6.0.0'
-    testImplementation 'junit:junit:4.13.1'
-}
+        stage('Build') {
+            steps {
+                echo 'Phase 2.4: Génération du JAR et Javadoc...'
+                bat 'gradlew.bat jar javadoc'
+                archiveArtifacts artifacts: 'build/libs/*.jar, build/docs/javadoc/**', allowEmptyArchive: false
+            }
+        }
 
-jacoco {
-    toolVersion = "0.8.11"
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.required.set(true)
-        html.outputLocation.set(layout.buildDirectory.dir('reports/jacoco'))
-    }
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            groupId = 'com.example'
-            artifactId = 'TP05'
-            version = '1.0'
+        stage('Deploy') {
+            steps {
+                echo 'Phase 2.5: Déploiement sur MyMavenRepo...'
+                bat 'gradlew.bat publish'
+            }
         }
     }
-    repositories {
-        maven {
-            name = 'myMavenRepo'
-            // On utilise directement l'URL publique puisque l'Auth est désactivée
-            url = uri(System.getenv("MAVEN_REPO_URL") ?: "https://mymavenrepo.com/repo/cEmjfkxugPlzLxXg1A2B/")
+
+    post {
+        success {
+            mail to: 'h_mokeddem@esi.dz',
+                 subject: "SUCCESS: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+                 body: "Le pipeline s'est terminé avec succès. Le JAR est déployé."
+        }
+        failure {
+            mail to: 'h_mokeddem@esi.dz',
+                 subject: "FAILED: ${env.JOB_NAME} [#${env.BUILD_NUMBER}]",
+                 body: "Le build a échoué. Vérifiez les logs sur Jenkins."
         }
     }
-}
-
-sonarqube {
-    properties {
-        property "sonar.projectKey", "matrix-api"
-        property "sonar.projectName", "Matrix API"
-        property "sonar.host.url", "http://localhost:9000"
-        property "sonar.login", "admin"
-        property "sonar.password", "admin"
-    }
-}
-
-test {
-    useJUnit()
-    finalizedBy jacocoTestReport
-    systemProperty "cucumber.publish.enabled", "false"
-    systemProperty "cucumber.plugin", "html:build/reports/cucumber/index.html"
-}
-
-cucumberReports {
-    outputDir = file('build/reports/cucumber/html')
-    buildId = '0'
-    reports = files('reports/example-report.json')
 }
